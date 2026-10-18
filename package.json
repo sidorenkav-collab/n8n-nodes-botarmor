@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-botarmor",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "n8n node for BotArmor AI: crash-test your chatbot (red-teaming audit), wait for the grade and stop a workflow when it is below your threshold.",
   "keywords": [
     "n8n-community-node-package",

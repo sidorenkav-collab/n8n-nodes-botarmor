@@ -5,7 +5,7 @@ export class BotArmorApi implements ICredentialType {
 	name = 'botArmorApi';
 	displayName = 'BotArmor API';
 	icon: Icon = { light: 'file:../icons/botarmor.svg', dark: 'file:../icons/botarmor.dark.svg' };
-	documentationUrl = 'https://botarmor-arena.netlify.app';
+	documentationUrl = 'https://botarmor.eu';
 	properties: INodeProperties[] = [
 		{
 			displayName: 'API Key',
@@ -20,7 +20,7 @@ export class BotArmorApi implements ICredentialType {
 			displayName: 'Base URL',
 			name: 'baseUrl',
 			type: 'string',
-			default: 'https://vps-57bd57fc.vps.ovh.net',
+			default: 'https://app.botarmor.eu',
 			description: 'Address of the BotArmor API',
 		},
 	];
