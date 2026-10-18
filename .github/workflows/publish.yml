@@ -23,6 +23,7 @@ jobs:
           node-version: 24 # ships npm 11, which supports Trusted Publishing
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      - run: npm run lint
       - run: npm run build
       - name: Tag matches package version
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"

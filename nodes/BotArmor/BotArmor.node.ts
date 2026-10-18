@@ -1,4 +1,4 @@
-import type { INodeType, INodeTypeDescription } from 'n8n-workflow';
+import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
 
 // Declarative node: every operation is one call to the BotArmor API, no runtime dependency.
 // Typical workflow: Start Audit -> Wait 10 min -> Get Status (loop while "running") -> IF gate.passed.
@@ -24,14 +24,14 @@ export class BotArmor implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'BotArmor',
 		name: 'botArmor',
-		icon: 'file:botarmor.svg',
+		icon: { light: 'file:../../icons/botarmor.svg', dark: 'file:../../icons/botarmor.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Crash-test your chatbot with BotArmor AI and gate a workflow on its grade',
 		defaults: { name: 'BotArmor' },
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		usableAsTool: true,
 		credentials: [{ name: 'botArmorApi', required: true }],
 		requestDefaults: {
@@ -60,18 +60,13 @@ export class BotArmor implements INodeType {
 				displayOptions: { show: { resource: ['audit'] } },
 				options: [
 					{
-						name: 'Start',
-						value: 'start',
-						action: 'Start an audit',
-						description: 'Start a live audit of a registered agent (takes 10 to 20 minutes)',
-						routing: { request: { method: 'POST', url: '/api/audits' } },
-					},
-					{
-						name: 'Retest',
-						value: 'retest',
-						action: 'Retest after patches',
-						description: 'Re-run a finished audit with the patched prompt; the report shows before/after',
-						routing: { request: { method: 'POST', url: '=/api/audits/{{$parameter["auditCode"]}}/retest' } },
+						name: 'Get Many',
+						value: 'getAll',
+						action: 'List audits',
+						routing: {
+							request: { method: 'GET', url: '/api/audits' },
+							output: { postReceive: [{ type: 'rootProperty', properties: { property: 'audits' } }] },
+						},
 					},
 					{
 						name: 'Get Status',
@@ -81,13 +76,18 @@ export class BotArmor implements INodeType {
 						routing: { request: { method: 'GET', url: '=/api/audits/{{$parameter["auditCode"]}}/status' } },
 					},
 					{
-						name: 'Get Many',
-						value: 'getAll',
-						action: 'List audits',
-						routing: {
-							request: { method: 'GET', url: '/api/audits' },
-							output: { postReceive: [{ type: 'rootProperty', properties: { property: 'audits' } }] },
-						},
+						name: 'Retest',
+						value: 'retest',
+						action: 'Retest after patches',
+						description: 'Re-run a finished audit with the patched prompt; the report shows before/after',
+						routing: { request: { method: 'POST', url: '=/api/audits/{{$parameter["auditCode"]}}/retest' } },
+					},
+					{
+						name: 'Start',
+						value: 'start',
+						action: 'Start an audit',
+						description: 'Start a live audit of a registered agent (takes 10 to 20 minutes)',
+						routing: { request: { method: 'POST', url: '/api/audits' } },
 					},
 					{
 						name: 'Verify Report',
@@ -158,29 +158,6 @@ export class BotArmor implements INodeType {
 				displayOptions: { show: { resource: ['audit'], operation: ['start'] } },
 				options: [
 					{
-						displayName: 'Scenarios',
-						name: 'levels',
-						type: 'multiOptions',
-						options: LEVELS,
-						default: [],
-						description: 'Attack scenarios to run (all when empty)',
-						routing: { send: { type: 'body', property: 'levels' } },
-					},
-					{
-						displayName: 'Report Language',
-						name: 'lang',
-						type: 'options',
-						options: [
-							{ name: 'English', value: 'en' },
-							{ name: 'French', value: 'fr' },
-							{ name: 'German', value: 'de' },
-							{ name: 'Spanish', value: 'es' },
-						],
-						default: 'fr',
-						description: 'Language of the report, for whoever reads it',
-						routing: { send: { type: 'body', property: 'lang' } },
-					},
-					{
 						displayName: 'Bot Language',
 						name: 'botLang',
 						type: 'options',
@@ -197,6 +174,29 @@ export class BotArmor implements INodeType {
 						default: '',
 						description: 'Language the attacker speaks to your bot. Can differ from the report language.',
 						routing: { send: { type: 'body', property: 'bot_lang' } },
+					},
+					{
+						displayName: 'Report Language',
+						name: 'lang',
+						type: 'options',
+						options: [
+							{ name: 'English', value: 'en' },
+							{ name: 'French', value: 'fr' },
+							{ name: 'German', value: 'de' },
+							{ name: 'Spanish', value: 'es' },
+						],
+						default: 'fr',
+						description: 'Language of the report, for whoever reads it',
+						routing: { send: { type: 'body', property: 'lang' } },
+					},
+					{
+						displayName: 'Scenarios',
+						name: 'levels',
+						type: 'multiOptions',
+						options: LEVELS,
+						default: [],
+						description: 'Attack scenarios to run (all when empty)',
+						routing: { send: { type: 'body', property: 'levels' } },
 					},
 					{
 						displayName: 'Test Google Sheet ID',

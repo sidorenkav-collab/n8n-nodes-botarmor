@@ -1,9 +1,10 @@
-import type { IAuthenticateGeneric, ICredentialTestRequest, ICredentialType, INodeProperties } from 'n8n-workflow';
+import type { IAuthenticateGeneric, ICredentialTestRequest, ICredentialType, INodeProperties, Icon } from 'n8n-workflow';
 
 // A personal API key from the BotArmor dashboard (tab "API"). Sent as a Bearer token; never logged by the node.
 export class BotArmorApi implements ICredentialType {
 	name = 'botArmorApi';
 	displayName = 'BotArmor API';
+	icon: Icon = { light: 'file:../icons/botarmor.svg', dark: 'file:../icons/botarmor.dark.svg' };
 	documentationUrl = 'https://botarmor-arena.netlify.app';
 	properties: INodeProperties[] = [
 		{

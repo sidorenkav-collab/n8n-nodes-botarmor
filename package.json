@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-botarmor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "n8n node for BotArmor AI: crash-test your chatbot (red-teaming audit), wait for the grade and stop a workflow when it is below your threshold.",
   "keywords": [
     "n8n-community-node-package",
@@ -20,12 +20,14 @@
     "url": "https://github.com/sidorenkav-collab/n8n-nodes-botarmor/issues"
   },
   "author": {
-    "name": "BotArmor AI"
+    "name": "BotArmor AI",
+    "email": "sidorenkav@gmail.com"
   },
   "main": "index.js",
   "scripts": {
-    "build": "tsc && node -e \"require('fs').cpSync('nodes/BotArmor/botarmor.svg','dist/nodes/BotArmor/botarmor.svg')\"",
-    "prepublishOnly": "npm run build"
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node -e \"require('fs').cpSync('icons','dist/icons',{recursive:true})\"",
+    "lint": "n8n-node lint",
+    "prepublishOnly": "npm run lint && npm run build"
   },
   "files": [
     "dist"
@@ -40,6 +42,7 @@
     ]
   },
   "devDependencies": {
+    "@n8n/node-cli": "0.52.5",
     "n8n-workflow": "2.16.0",
     "typescript": "5.9.3"
   },
