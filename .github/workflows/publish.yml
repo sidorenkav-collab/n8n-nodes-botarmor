@@ -1,0 +1,29 @@
+# Publishes this package to npm through npm Trusted Publishing (OIDC): no npm token is stored anywhere, and npm
+# attaches provenance (required for n8n verified community nodes) because this repository is public.
+# One-time setup on npmjs.com, package settings -> Trusted Publisher -> GitHub Actions:
+#   organization/user sidorenkav-collab, repository n8n-nodes-botarmor, workflow publish.yml
+# Release: bump "version" in package.json, commit, then push a tag v<version> (e.g. v0.1.1).
+name: Publish to npm
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for Trusted Publishing and provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # ships npm 11, which supports Trusted Publishing
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - name: Tag matches package version
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm publish --access public

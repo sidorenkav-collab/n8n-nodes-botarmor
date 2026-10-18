@@ -1,0 +1,157 @@
+{
+  "name": "BotArmor: re-audit the bot when its prompt changes",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Re-audit on prompt change\n\n1. Keep your bot's prompt in a Google Sheet: columns **Prompt** and **Last audit** (a BotArmor audit code, e.g. BA-XXXXXXXX).\n2. When **Prompt** changes, BotArmor retests the bot with the new prompt (same agent, same scenarios).\n3. The grade is posted to Slack; below the minimum grade the workflow takes the red branch.\n\nCredentials: **BotArmor API** (dashboard → API), Google Sheets, Slack.\nOnly test bots you own or have written permission to test.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "b1a2c3d4-0001-4000-8000-000000000001",
+      "name": "How it works",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-80, -360]
+    },
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "documentId": { "__rl": true, "value": "", "mode": "list" },
+        "sheetName": { "__rl": true, "value": "", "mode": "list" },
+        "event": "rowUpdate",
+        "options": { "columnsToWatch": ["Prompt"] }
+      },
+      "id": "b1a2c3d4-0002-4000-8000-000000000002",
+      "name": "Prompt changed",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "audit",
+        "operation": "retest",
+        "auditCode": "={{ $json['Last audit'] }}",
+        "systemPrompt": "={{ $json.Prompt }}",
+        "authorizationConfirmed": true
+      },
+      "id": "b1a2c3d4-0003-4000-8000-000000000003",
+      "name": "Retest bot",
+      "type": "n8n-nodes-botarmor.botArmor",
+      "typeVersion": 1,
+      "position": [240, 0]
+    },
+    {
+      "parameters": { "amount": 10, "unit": "minutes" },
+      "id": "b1a2c3d4-0004-4000-8000-000000000004",
+      "name": "Wait 10 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [480, 0],
+      "webhookId": "b1a2c3d4-0004-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "resource": "audit",
+        "operation": "getStatus",
+        "auditCode": "={{ $('Retest bot').item.json.audit_code }}",
+        "minGrade": "B"
+      },
+      "id": "b1a2c3d4-0005-4000-8000-000000000005",
+      "name": "Get status",
+      "type": "n8n-nodes-botarmor.botArmor",
+      "typeVersion": 1,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.status }}", "rightValue": "running", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1a2c3d4-0006-4000-8000-000000000006",
+      "name": "Still running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 0]
+    },
+    {
+      "parameters": { "amount": 5, "unit": "minutes" },
+      "id": "b1a2c3d4-0007-4000-8000-000000000007",
+      "name": "Wait 5 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [960, 220],
+      "webhookId": "b1a2c3d4-0007-4000-8000-0000000000bb"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "c2", "leftValue": "={{ $json.gate.passed }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1a2c3d4-0008-4000-8000-000000000008",
+      "name": "Grade OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, -100]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "__rl": true, "value": "#bots", "mode": "name" },
+        "text": "=✅ Bot retested after the prompt change: grade {{ $json.grade }} ({{ $json.audit_code }}). Report: {{ $json.verify_url }}",
+        "otherOptions": {}
+      },
+      "id": "b1a2c3d4-0009-4000-8000-000000000009",
+      "name": "Slack: grade OK",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1440, -200]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "__rl": true, "value": "#bots", "mode": "name" },
+        "text": "=⚠️ The new prompt weakened the bot: grade {{ $json.grade || $json.status }} ({{ $json.audit_code }}), below {{ $json.gate.min_grade }}. Do not publish it. Report: {{ $json.verify_url }}",
+        "otherOptions": {}
+      },
+      "id": "b1a2c3d4-0010-4000-8000-000000000010",
+      "name": "Slack: grade too low",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1440, 0]
+    }
+  ],
+  "connections": {
+    "Prompt changed": { "main": [[{ "node": "Retest bot", "type": "main", "index": 0 }]] },
+    "Retest bot": { "main": [[{ "node": "Wait 10 min", "type": "main", "index": 0 }]] },
+    "Wait 10 min": { "main": [[{ "node": "Get status", "type": "main", "index": 0 }]] },
+    "Get status": { "main": [[{ "node": "Still running?", "type": "main", "index": 0 }]] },
+    "Still running?": {
+      "main": [
+        [{ "node": "Wait 5 min", "type": "main", "index": 0 }],
+        [{ "node": "Grade OK?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 5 min": { "main": [[{ "node": "Get status", "type": "main", "index": 0 }]] },
+    "Grade OK?": {
+      "main": [
+        [{ "node": "Slack: grade OK", "type": "main", "index": 0 }],
+        [{ "node": "Slack: grade too low", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

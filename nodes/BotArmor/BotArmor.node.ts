@@ -1,0 +1,261 @@
+import type { INodeType, INodeTypeDescription } from 'n8n-workflow';
+
+// Declarative node: every operation is one call to the BotArmor API, no runtime dependency.
+// Typical workflow: Start Audit -> Wait 10 min -> Get Status (loop while "running") -> IF gate.passed.
+const LEVELS = [
+	['logic', 'Logic Maze'],
+	['toxic', 'Angry Customer'],
+	['hacker', 'Fake CEO'],
+	['lawyer', 'Scam Lawyer'],
+	['multilang', 'Language Mix'],
+	['loop', 'Infinite Loop'],
+	['roleplay', 'Roleplay Trap'],
+	['phishing', 'Payload & Phishing'],
+	['ethics', 'Ethics & Compliance'],
+	['burst', 'Multi-Turn Burst'],
+	['disclosure', 'AI Disclosure (Art. 50)'],
+	['facts', 'Invented Facts'],
+].map(([value, name]) => ({ name, value }));
+
+const AUTHORIZATION =
+	"I confirm that I own this agent or hold the owner's written authorization to subject it to adversarial testing; I accept the rules of engagement (point-in-time test, test markers, consumption of the agent's operations) and I understand this test is not a certification.";
+
+export class BotArmor implements INodeType {
+	description: INodeTypeDescription = {
+		displayName: 'BotArmor',
+		name: 'botArmor',
+		icon: 'file:botarmor.svg',
+		group: ['transform'],
+		version: 1,
+		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
+		description: 'Crash-test your chatbot with BotArmor AI and gate a workflow on its grade',
+		defaults: { name: 'BotArmor' },
+		inputs: ['main'],
+		outputs: ['main'],
+		usableAsTool: true,
+		credentials: [{ name: 'botArmorApi', required: true }],
+		requestDefaults: {
+			baseURL: '={{$credentials.baseUrl}}',
+			headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+		},
+		properties: [
+			{
+				displayName: 'Resource',
+				name: 'resource',
+				type: 'options',
+				noDataExpression: true,
+				options: [
+					{ name: 'Audit', value: 'audit' },
+					{ name: 'Agent', value: 'agent' },
+				],
+				default: 'audit',
+			},
+
+			// ---------------- Audit ----------------
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: { show: { resource: ['audit'] } },
+				options: [
+					{
+						name: 'Start',
+						value: 'start',
+						action: 'Start an audit',
+						description: 'Start a live audit of a registered agent (takes 10 to 20 minutes)',
+						routing: { request: { method: 'POST', url: '/api/audits' } },
+					},
+					{
+						name: 'Retest',
+						value: 'retest',
+						action: 'Retest after patches',
+						description: 'Re-run a finished audit with the patched prompt; the report shows before/after',
+						routing: { request: { method: 'POST', url: '=/api/audits/{{$parameter["auditCode"]}}/retest' } },
+					},
+					{
+						name: 'Get Status',
+						value: 'getStatus',
+						action: 'Get the status and grade of an audit',
+						description: 'Status (running, completed, failed), grade and whether it meets your threshold',
+						routing: { request: { method: 'GET', url: '=/api/audits/{{$parameter["auditCode"]}}/status' } },
+					},
+					{
+						name: 'Get Many',
+						value: 'getAll',
+						action: 'List audits',
+						routing: {
+							request: { method: 'GET', url: '/api/audits' },
+							output: { postReceive: [{ type: 'rootProperty', properties: { property: 'audits' } }] },
+						},
+					},
+					{
+						name: 'Verify Report',
+						value: 'verify',
+						action: 'Verify a report',
+						description: 'Check that a report is authentic and still current (public, signed, anchored)',
+						routing: { request: { method: 'GET', url: '=/verify/{{$parameter["auditCode"]}}?format=json' } },
+					},
+				],
+				default: 'start',
+			},
+			{
+				displayName: 'Agent ID',
+				name: 'agentId',
+				type: 'string',
+				required: true,
+				default: '',
+				description: 'ID of the agent registered in BotArmor (Agent > Get Many lists them)',
+				displayOptions: { show: { resource: ['audit'], operation: ['start'] } },
+				routing: { send: { type: 'body', property: 'agent_id' } },
+			},
+			{
+				displayName: 'Audit Code',
+				name: 'auditCode',
+				type: 'string',
+				required: true,
+				default: '',
+				placeholder: 'BA-XXXXXXXX',
+				displayOptions: { show: { resource: ['audit'], operation: ['retest', 'getStatus', 'verify'] } },
+			},
+			{
+				displayName: 'System Prompt',
+				name: 'systemPrompt',
+				type: 'string',
+				typeOptions: { rows: 6 },
+				required: true,
+				default: '',
+				description: "Your bot's instructions, used as the judge's rulebook. BotArmor stores only its SHA-256.",
+				displayOptions: { show: { resource: ['audit'], operation: ['start', 'retest'] } },
+				routing: { send: { type: 'body', property: 'system_prompt' } },
+			},
+			{
+				displayName: 'Knowledge Base',
+				name: 'knowledgeBase',
+				type: 'string',
+				typeOptions: { rows: 3 },
+				default: '',
+				description: 'Price list, opening hours… (optional)',
+				displayOptions: { show: { resource: ['audit'], operation: ['start', 'retest'] } },
+				routing: { send: { type: 'body', property: 'knowledge_base' } },
+			},
+			{
+				displayName: 'I Own This Agent or Have Written Permission to Test It',
+				name: 'authorizationConfirmed',
+				type: 'boolean',
+				required: true,
+				default: false,
+				description: AUTHORIZATION,
+				displayOptions: { show: { resource: ['audit'], operation: ['start', 'retest'] } },
+				routing: { send: { type: 'body', property: 'authorization_confirmed' } },
+			},
+			{
+				displayName: 'Options',
+				name: 'options',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: { show: { resource: ['audit'], operation: ['start'] } },
+				options: [
+					{
+						displayName: 'Scenarios',
+						name: 'levels',
+						type: 'multiOptions',
+						options: LEVELS,
+						default: [],
+						description: 'Attack scenarios to run (all when empty)',
+						routing: { send: { type: 'body', property: 'levels' } },
+					},
+					{
+						displayName: 'Report Language',
+						name: 'lang',
+						type: 'options',
+						options: [
+							{ name: 'English', value: 'en' },
+							{ name: 'French', value: 'fr' },
+							{ name: 'German', value: 'de' },
+							{ name: 'Spanish', value: 'es' },
+						],
+						default: 'fr',
+						description: 'Language of the report, for whoever reads it',
+						routing: { send: { type: 'body', property: 'lang' } },
+					},
+					{
+						displayName: 'Bot Language',
+						name: 'botLang',
+						type: 'options',
+						options: [
+							{ name: 'Detect From the Prompt', value: '' },
+							{ name: 'Dutch', value: 'nl' },
+							{ name: 'English', value: 'en' },
+							{ name: 'French', value: 'fr' },
+							{ name: 'German', value: 'de' },
+							{ name: 'Italian', value: 'it' },
+							{ name: 'Portuguese', value: 'pt' },
+							{ name: 'Spanish', value: 'es' },
+						],
+						default: '',
+						description: 'Language the attacker speaks to your bot. Can differ from the report language.',
+						routing: { send: { type: 'body', property: 'bot_lang' } },
+					},
+					{
+						displayName: 'Test Google Sheet ID',
+						name: 'spreadsheetId',
+						type: 'string',
+						default: '',
+						description: 'A TEST sheet shared with the BotArmor service account as Editor; checks what the bot writes',
+						routing: { send: { type: 'body', property: 'backend.spreadsheet_id' } },
+					},
+					{
+						displayName: 'Test Sheet Range',
+						name: 'range',
+						type: 'string',
+						default: 'Sheet1!A1:H',
+						routing: { send: { type: 'body', property: 'backend.range' } },
+					},
+				],
+			},
+			{
+				displayName: 'Minimum Grade',
+				name: 'minGrade',
+				type: 'options',
+				options: ['A', 'B', 'C', 'D', 'F'].map((g) => ({ name: g, value: g })),
+				default: 'B',
+				description: 'Threshold for gate.passed',
+				displayOptions: { show: { resource: ['audit'], operation: ['getStatus'] } },
+				routing: { send: { type: 'query', property: 'min_grade' } },
+			},
+			{
+				displayName: 'Fail When Below Threshold',
+				name: 'strict',
+				type: 'boolean',
+				default: false,
+				description:
+					'Whether to make the node error (HTTP 412) when a finished audit is below the minimum grade, stopping the workflow',
+				displayOptions: { show: { resource: ['audit'], operation: ['getStatus'] } },
+				routing: { send: { type: 'query', property: 'strict', value: '={{$value ? 1 : 0}}' } },
+			},
+
+			// ---------------- Agent ----------------
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: { show: { resource: ['agent'] } },
+				options: [
+					{
+						name: 'Get Many',
+						value: 'getAll',
+						action: 'List agents',
+						routing: {
+							request: { method: 'GET', url: '/api/agents' },
+							output: { postReceive: [{ type: 'rootProperty', properties: { property: 'agents' } }] },
+						},
+					},
+				],
+				default: 'getAll',
+			},
+		],
+	};
+}
