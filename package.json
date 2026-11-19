@@ -1,13 +1,16 @@
 {
   "name": "n8n-nodes-botarmor",
-  "version": "0.1.3",
-  "description": "n8n node for BotArmor AI: crash-test your chatbot (red-teaming audit), wait for the grade and stop a workflow when it is below your threshold.",
+  "version": "0.1.4",
+  "description": "n8n node for BotArmor AI: no-code LLM red teaming and prompt injection testing for your chatbot. Crash-test it, wait for the A-F grade and stop a workflow when it is below your threshold.",
   "keywords": [
     "n8n-community-node-package",
     "botarmor",
     "chatbot",
+    "llm-red-teaming",
     "red-teaming",
+    "prompt-injection",
     "ai-security",
+    "chatbot-testing",
     "audit"
   ],
   "license": "MIT",

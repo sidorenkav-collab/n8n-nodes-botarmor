@@ -1,6 +1,8 @@
 # n8n-nodes-botarmor
 
-n8n node for **BotArmor AI**: crash-test your customer-service chatbot (a red-teaming audit of its live webhook), wait for the grade, and stop a workflow when the bot is below your threshold — a CI-style gate for no-code bots.
+n8n node for **BotArmor AI**, no-code LLM red teaming and prompt injection testing for chatbots, built for small businesses and n8n builders. Crash-test your customer-service chatbot (an adversarial audit of its live webhook), wait for the A–F grade, and stop a workflow when the bot is below your threshold: a CI-style gate for no-code bots.
+
+Verified node: install it from the n8n nodes panel.
 
 BotArmor tests bots you own, or that you have the owner's written permission to test. Every audit start asks you to confirm it.
 
