@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-botarmor",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "n8n node for BotArmor AI: no-code LLM red teaming and prompt injection testing for your chatbot. Crash-test it, wait for the A-F grade and stop a workflow when it is below your threshold.",
   "keywords": [
     "n8n-community-node-package",

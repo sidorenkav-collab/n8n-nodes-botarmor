@@ -18,7 +18,7 @@ In n8n: **Settings → Community Nodes → Install**, package name `n8n-nodes-bo
 
 | Resource | Operation | What it does |
 |---|---|---|
-| Audit | Start | Starts a live audit of a registered agent (10–20 min). Returns `audit_code`. |
+| Audit | Start | **Target: Registered Agent (Live)** audits your running bot through its webhook; **Target: System Prompt Only (Simulated)** plays your agent from its system prompt, with no webhook and nothing deployed (set who talks to it: customers, or its owner/staff). 10–20 min. Returns `audit_code`. |
 | Audit | Retest | Re-runs a finished audit with your patched prompt; the report shows before/after per scenario. |
 | Audit | Get Status | `status` (running / completed / failed), `grade` (A–F), `gate.passed` against your minimum grade. With **Fail When Below Threshold**, the node errors (HTTP 412) on a weak bot and stops the workflow. |
 | Audit | Get Many | Your audits, newest first. |
@@ -29,7 +29,10 @@ In n8n: **Settings → Community Nodes → Install**, package name `n8n-nodes-bo
 
 `Start` → `Wait 10 min` → `Get Status` → `IF status = running` (loop back through a 5-min `Wait`) → `IF gate.passed` → publish / alert.
 
-A ready-made template is in [`templates/reaudit-on-prompt-change.json`](templates/reaudit-on-prompt-change.json): when the prompt cell of your bot changes in a Google Sheet, it retests the bot and posts the grade to Slack.
+Ready-made templates:
+
+- [`templates/crash-test-agent-prompt-before-launch.json`](templates/crash-test-agent-prompt-before-launch.json): paste your AI agent's system prompt, run, and get an email with the grade before the agent goes live (no webhook needed).
+- [`templates/reaudit-on-prompt-change.json`](templates/reaudit-on-prompt-change.json): when the prompt cell of your bot changes in a Google Sheet, it retests the bot and posts the grade to Slack.
 
 ## Languages
 

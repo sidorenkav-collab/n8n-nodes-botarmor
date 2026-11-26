@@ -1,0 +1,175 @@
+{
+  "name": "Crash-test your AI agent's prompt before you put it live (BotArmor)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Crash-test an AI agent's prompt before launch\n\nBefore a customer-facing AI agent goes live, BotArmor attacks it the way real users do: fake manager asking for a discount, angry customer, invented facts, prompt injection, phishing links, \"are you a human?\" (EU AI Act Art. 50).\n\n1. Paste your agent's **system prompt** in **Your agent** (the same text as in your AI Agent node).\n2. Run the workflow. BotArmor plays the agent from its prompt: no webhook, nothing to deploy.\n3. About 10-20 minutes later you get the grade (A to F). Below **B**, the email lists what to fix; the report gives the exact text to add to the prompt.\n\nCredentials: **BotArmor API** (app.botarmor.eu > API), Gmail (or swap in Slack, Telegram...).",
+        "height": 380,
+        "width": 460
+      },
+      "id": "c2b3d4e5-0001-4000-8000-000000000001",
+      "name": "How it works",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, -440]
+    },
+    {
+      "parameters": {},
+      "id": "c2b3d4e5-0002-4000-8000-000000000002",
+      "name": "Run before launch",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "agent_name", "value": "Support agent", "type": "string" },
+            { "id": "a2", "name": "system_prompt", "value": "You are the assistant of Example Store. Answer customers briefly and politely. Prices: delivery 4.90 EUR, free above 50 EUR. No discounts, no refunds by chat: refer to support@example.com.", "type": "string" },
+            { "id": "a3", "name": "notify_email", "value": "you@example.com", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2b3d4e5-0003-4000-8000-000000000003",
+      "name": "Your agent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "resource": "audit",
+        "operation": "start",
+        "target": "prompt",
+        "agentName": "={{ $json.agent_name }}",
+        "audience": "public",
+        "systemPrompt": "={{ $json.system_prompt }}",
+        "minGrade": "B"
+      },
+      "id": "c2b3d4e5-0004-4000-8000-000000000004",
+      "name": "BotArmor: crash-test the prompt",
+      "type": "n8n-nodes-botarmor.botArmor",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": { "amount": 10, "unit": "minutes" },
+      "id": "c2b3d4e5-0005-4000-8000-000000000005",
+      "name": "Wait 10 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [660, 0],
+      "webhookId": "c2b3d4e5-0005-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "resource": "audit",
+        "operation": "getStatus",
+        "auditCode": "={{ $('BotArmor: crash-test the prompt').item.json.audit_code }}",
+        "minGrade": "B"
+      },
+      "id": "c2b3d4e5-0006-4000-8000-000000000006",
+      "name": "Get grade",
+      "type": "n8n-nodes-botarmor.botArmor",
+      "typeVersion": 1,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.status }}", "rightValue": "running", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c2b3d4e5-0007-4000-8000-000000000007",
+      "name": "Still running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": { "amount": 5, "unit": "minutes" },
+      "id": "c2b3d4e5-0008-4000-8000-000000000008",
+      "name": "Wait 5 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1100, 220],
+      "webhookId": "c2b3d4e5-0008-4000-8000-0000000000bb"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "c2", "leftValue": "={{ $json.gate.passed }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c2b3d4e5-0009-4000-8000-000000000009",
+      "name": "Grade B or better?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1320, -100]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Your agent').item.json.notify_email }}",
+        "subject": "=✅ {{ $('Your agent').item.json.agent_name }}: grade {{ $json.grade }}, ready to go live",
+        "emailType": "text",
+        "message": "=BotArmor crash-tested the prompt of {{ $('Your agent').item.json.agent_name }}: grade {{ $json.grade }} ({{ $json.audit_code }}).\n\nSigned report: {{ $json.verify_url }}",
+        "options": {}
+      },
+      "id": "c2b3d4e5-0010-4000-8000-000000000010",
+      "name": "Email: ready",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1560, -200],
+      "webhookId": "c2b3d4e5-0010-4000-8000-0000000000cc"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Your agent').item.json.notify_email }}",
+        "subject": "=⚠️ {{ $('Your agent').item.json.agent_name }}: grade {{ $json.grade || $json.status }}, fix the prompt first",
+        "emailType": "text",
+        "message": "=BotArmor broke the prompt of {{ $('Your agent').item.json.agent_name }}: grade {{ $json.grade || $json.status }} ({{ $json.audit_code }}), below {{ $json.gate.min_grade }}.\n\nOpen the report in app.botarmor.eu: each failed scenario comes with the exact text to add to the prompt, and \"Apply the fixes\" re-tests the fixed prompt in one click.\n\nSigned report: {{ $json.verify_url }}",
+        "options": {}
+      },
+      "id": "c2b3d4e5-0011-4000-8000-000000000011",
+      "name": "Email: fix first",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1560, 0],
+      "webhookId": "c2b3d4e5-0011-4000-8000-0000000000dd"
+    }
+  ],
+  "connections": {
+    "Run before launch": { "main": [[{ "node": "Your agent", "type": "main", "index": 0 }]] },
+    "Your agent": { "main": [[{ "node": "BotArmor: crash-test the prompt", "type": "main", "index": 0 }]] },
+    "BotArmor: crash-test the prompt": { "main": [[{ "node": "Wait 10 min", "type": "main", "index": 0 }]] },
+    "Wait 10 min": { "main": [[{ "node": "Get grade", "type": "main", "index": 0 }]] },
+    "Get grade": { "main": [[{ "node": "Still running?", "type": "main", "index": 0 }]] },
+    "Still running?": {
+      "main": [
+        [{ "node": "Wait 5 min", "type": "main", "index": 0 }],
+        [{ "node": "Grade B or better?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait 5 min": { "main": [[{ "node": "Get grade", "type": "main", "index": 0 }]] },
+    "Grade B or better?": {
+      "main": [
+        [{ "node": "Email: ready", "type": "main", "index": 0 }],
+        [{ "node": "Email: fix first", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
