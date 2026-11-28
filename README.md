@@ -31,6 +31,7 @@ In n8n: **Settings → Community Nodes → Install**, package name `n8n-nodes-bo
 
 Ready-made templates:
 
+- [`templates/secure-support-agent.json`](templates/secure-support-agent.json): a customer-support AI agent hardened against fake managers, fake lawyers, discount pressure and emails to third parties. Two guardrails live in the tools: the email goes only to `customer_email` from your site, never to an address typed in the chat, and the compensation grid is code. It returns its tool calls and results, so a BotArmor audit sees what really happened. Quick scan on 28 Nov 2026: grade A, 0 breaks on 12 levels.
 - [`templates/crash-test-agent-prompt-before-launch.json`](templates/crash-test-agent-prompt-before-launch.json): paste your AI agent's system prompt, run, and get an email with the grade before the agent goes live (no webhook needed).
 - [`templates/reaudit-on-prompt-change.json`](templates/reaudit-on-prompt-change.json): when the prompt cell of your bot changes in a Google Sheet, it retests the bot and posts the grade to Slack.
 
