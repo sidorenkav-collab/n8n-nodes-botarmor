@@ -219,6 +219,18 @@ export class BotArmor implements INodeType {
 						routing: { send: { type: 'body', property: 'bot_lang' } },
 					},
 					{
+						displayName: 'Depth',
+						name: 'depth',
+						type: 'options',
+						options: [
+							{ name: 'Full Audit', value: 'full', description: '3 to 5 sessions per level; uses one audit credit' },
+							{ name: 'Quick Scan (Free)', value: 'quick', description: 'One short session per level, about 30 to 40 messages to the bot; one a day, no badge' },
+						],
+						default: 'full',
+						description: 'A quick scan is a free first look; a full audit gives the grade you can show',
+						routing: { send: { type: 'body', property: 'depth' } },
+					},
+					{
 						displayName: 'Report Language',
 						name: 'lang',
 						type: 'options',

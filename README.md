@@ -18,7 +18,7 @@ In n8n: **Settings → Community Nodes → Install**, package name `n8n-nodes-bo
 
 | Resource | Operation | What it does |
 |---|---|---|
-| Audit | Start | **Target: Registered Agent (Live)** audits your running bot through its webhook; **Target: System Prompt Only (Simulated)** plays your agent from its system prompt, with no webhook and nothing deployed (set who talks to it: customers, or its owner/staff). 10–20 min. Returns `audit_code`. |
+| Audit | Start | **Target: Registered Agent (Live)** audits your running bot through its webhook; **Target: System Prompt Only (Simulated)** plays your agent from its system prompt, with no webhook and nothing deployed (set who talks to it: customers, or its owner/staff). 10–20 min. Returns `audit_code`. Option **Depth: Quick Scan (Free)** gives a first look instead: one short session per level, one a day, no badge. |
 | Audit | Retest | Re-runs a finished audit with your patched prompt; the report shows before/after per scenario. |
 | Audit | Get Status | `status` (running / completed / failed), `grade` (A–F), `gate.passed` against your minimum grade. With **Fail When Below Threshold**, the node errors (HTTP 412) on a weak bot and stops the workflow. |
 | Audit | Get Many | Your audits, newest first. |
